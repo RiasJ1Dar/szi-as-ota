@@ -1,0 +1,10 @@
+# Ключі і відкриті конфіги сюди ніколи не потрапляють
+*.key
+look.key
+look.json
+look.szi
+*.bak
+*.tmp
+Thumbs.db
+.DS_Store
+target/
