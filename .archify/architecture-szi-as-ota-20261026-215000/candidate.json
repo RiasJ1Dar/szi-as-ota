@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "szi-as-ota: дзеркало зашифрованих оновлень",
+    "output": ".archify/architecture-szi-as-ota-20261026-215000/szi-as-ota.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/RiasJ1Dar/szi-as-ota.git",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "c33608d36335c5358dc11dc1920176e7aeb94a5d"
+    }
+  },
+  "layout": {
+    "mode": "grid",
+    "origin": [40, 48],
+    "cols": 5,
+    "cellW": 125,
+    "cellH": 70,
+    "gapX": 70,
+    "gapY": 95
+  },
+  "components": [
+    {
+      "id": "author", "type": "external", "label": "Автор пакета", "sublabel": "закритий ключ",
+      "row": 0, "col": 0,
+      "sources": [{ "path": "README.md", "line": 17, "end_line": 22, "label": "довіру дає підпис" }]
+    },
+    {
+      "id": "sig", "type": "security", "label": "RSA-підпис", "sublabel": "SZIUSIG1 і сіль",
+      "row": 0, "col": 1,
+      "sources": [{ "path": "README.md", "line": 14, "end_line": 15, "label": "формат блоба" }]
+    },
+    {
+      "id": "manifest", "type": "database", "label": "manifest.szi", "sublabel": "перелік файлів",
+      "row": 0, "col": 2,
+      "sources": [
+        { "path": "README.md", "line": 11, "label": "шляхи, SHA-256, версія" },
+        { "path": "manifest.szi", "label": "сам маніфест" }
+      ]
+    },
+    {
+      "id": "raw", "type": "cloud", "label": "raw GitHub", "sublabel": "база HTTPS",
+      "row": 0, "col": 3,
+      "sources": [{ "path": "README.md", "line": 40, "end_line": 44, "label": "базовий URL" }]
+    },
+    {
+      "id": "arm", "type": "external", "label": "АРМ", "sublabel": "СЗІ в АС",
+      "row": 0, "col": 4,
+      "sources": [{ "path": "README.md", "line": 36, "end_line": 38, "label": "Оновлення з GitHub" }]
+    },
+    {
+      "id": "enc", "type": "security", "label": "AES-256-CBC", "sublabel": "HMAC-SHA512",
+      "row": 1, "col": 1,
+      "sources": [{ "path": "README.md", "line": 14, "end_line": 26, "label": "Encrypt-then-MAC" }]
+    },
+    {
+      "id": "blobs", "type": "database", "label": "blobs/*.bin", "sublabel": "ім'я = SHA-256",
+      "row": 1, "col": 2,
+      "sources": [
+        { "path": "README.md", "line": 12, "label": "один файл на блоб" },
+        { "path": "README.md", "line": 28, "end_line": 31, "label": "інкрементність" }
+      ]
+    },
+    {
+      "id": "media", "type": "external", "label": "носій", "sublabel": "АРМ без мережі",
+      "row": 1, "col": 3,
+      "sources": [{ "path": "README.md", "line": 44, "label": "пакет приносять" }]
+    },
+    {
+      "id": "armdata", "type": "database", "label": "дані АРМ", "sublabel": "не чіпаються",
+      "row": 1, "col": 4,
+      "sources": [{ "path": "README.md", "line": 46, "label": "результати і ключі" }]
+    }
+  ],
+  "connections": [
+    { "id": "author-sig", "from": "author", "to": "sig", "label": "підпис", "variant": "security" },
+    { "id": "author-enc", "from": "author", "to": "enc", "label": "пакує" },
+    { "id": "sig-manifest", "from": "sig", "to": "manifest", "label": "маніфест", "variant": "emphasis" },
+    { "id": "enc-blobs", "from": "enc", "to": "blobs", "label": "шифрує", "variant": "security" },
+    { "id": "manifest-raw", "from": "manifest", "to": "raw", "label": "upload", "variant": "emphasis" },
+    { "id": "blobs-raw", "from": "blobs", "to": "raw", "label": "upload" },
+    { "id": "raw-arm", "from": "raw", "to": "arm", "label": "HTTPS", "variant": "emphasis" },
+    { "id": "blobs-media", "from": "blobs", "to": "media", "label": "копія" },
+    { "id": "media-arm", "from": "media", "to": "arm", "label": "офлайн" },
+    { "id": "arm-data", "from": "arm", "to": "armdata", "label": "обходить", "variant": "dashed", "fromSide": "bottom", "toSide": "top" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Чесно про стійкість",
+      "items": [
+        "Ключ шифрування більше не виводиться з look.key",
+        "Шифрування йде на вшитому ключі розповсюдження з випадковою сіллю на пакет",
+        "Вшитий ключ — обфускація вмісту, не криптостійкість: хто розбере exe, прочитає блоби",
+        "Конфіденційність тут слабка, автентичність сильна: підробити пакет без ключа автора неможливо"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Чому інкрементно",
+      "items": [
+        "Змінився один файл — клієнт качає один блоб",
+        "Незмінений файл має той самий SHA-256, блоб уже є і повторно не береться",
+        "Імена блобів — хеші вмісту, не шляхи"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Межі репозиторію",
+      "items": [
+        "Це не вихідний код програми і не ключі, лише блоби",
+        "look.key, look.szi, look.json і будь-які паролі тут заборонені",
+        "gh на АРМ не потрібен; без мережі пакет приносять на носії",
+        "Дані АРМ оновлення не чіпає"
+      ]
+    }
+  ]
+}
